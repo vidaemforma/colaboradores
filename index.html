@@ -29,6 +29,13 @@
 .developer-credit{color:#797f8b;font-size:10px;font-weight:400;line-height:1.6;text-align:center;margin-top:20px;letter-spacing:.1px}
 .login-side{position:relative;padding-bottom:76px}.login-credit{position:absolute;bottom:22px;left:20px;right:20px;margin:0}
 @media(max-width:760px){.login-side{padding-bottom:76px}.developer-credit{font-size:10px}.login-credit{bottom:20px}.social-links{gap:9px}}
+/* Gestão dos acessos de cada empresa */
+.row-actions{display:flex;align-items:center;gap:8px;white-space:nowrap}.row-actions .btn{font-size:11px}
+.access-intro{margin-top:20px;padding:14px 16px;border:1px solid #d7e1ff;background:#f5f8ff;border-radius:9px;line-height:1.6}
+.access-intro strong{display:block;color:#003BFB;font-size:14px;margin-bottom:3px}.access-intro p{margin:0;font-size:12px;color:#606572}
+.access-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 13px}.access-toolbar .muted{font-size:12px}
+.access-empty{text-align:center;padding:30px 15px;color:#606572;font-size:13px;line-height:1.6}
+.access-state{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;margin-top:5px;background:#ddfaf5;color:#075e56}.access-state.inactive{background:#f0f1f5;color:#606572}
 </style>
 </head>
 <body>
@@ -113,7 +120,7 @@ async function loadAll(){
   updateClientFilter();render();$('updatedLabel').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
  }finally{state.loading=false;$('refreshButton').disabled=false;updateNewButton();}
 }
-function updateNewButton(){const can=state.view!=='Clientes'||state.user?.Perfil==='Administrador';$('newButton').hidden=!can;$('newButton').disabled=state.loading||!state.data[state.view]||!state.data.Setores||!state.data.Clientes;}
+function updateNewButton(){const can=state.user?.Perfil==='Administrador';$('newButton').hidden=!can;$('newButton').disabled=state.loading||!state.data[state.view]||!state.data.Setores||!state.data.Clientes;}
 function updateClientFilter(){const previous=$('clientFilter').value;$('clientFilter').innerHTML='<option value="">Todos os clientes</option>'+[...(state.data.Clientes||[])].sort((a,b)=>a.Nome.localeCompare(b.Nome,'pt-BR')).map(c=>'<option value="'+escapeHTML(c.ID)+'">'+escapeHTML(c.Nome)+'</option>').join('');$('clientFilter').value=previous;}
 function setView(key){state.view=key;state.page=1;$('search').value='';const v=VIEWS[key];$('pageTitle').textContent=v.title;$('pageDescription').textContent=v.description;$('breadcrumb').textContent=v.title;$('newLabel').textContent=v.newLabel;$('tableTitle').textContent=v.table;$('tableHint').textContent=key==='Clientes'?'Cadastro e organização':'Histórico de atividades';['clientFilterLabel','startFilterLabel','endFilterLabel'].forEach(id=>$(id).hidden=key==='Clientes');document.querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===key);b.setAttribute('aria-current',b.dataset.view===key?'page':'false');});$('sidebar').classList.remove('open');$('menuToggle').setAttribute('aria-expanded','false');updateNewButton();render();}
 function clientName(id){return (state.data.Clientes||[]).find(c=>c.ID===id)?.Nome||'Cliente não localizado';}
@@ -135,8 +142,8 @@ function renderStats(rows){const total=rows.length;let html='';if(state.view==='
 function logoCell(c){return '<div class="client-logo" data-logo-client="'+escapeHTML(c.ID)+'">'+escapeHTML(initials(c.Nome))+'</div>';}
 function render(){if(!state.user)return;const rows=filteredRows();renderStats(rows);const pages=Math.max(1,Math.ceil(rows.length/state.pageSize));state.page=Math.min(state.page,pages);const pageRows=rows.slice((state.page-1)*state.pageSize,state.page*state.pageSize);const admin=state.user.Perfil==='Administrador';
  let headers=[],body='';
- if(state.view==='Clientes'){headers=['Cliente','Setores','Logotipo',...(admin?['Ações']:[])];body=pageRows.map(c=>'<tr><td><div class="client-cell">'+logoCell(c)+'<div class="client-name">'+escapeHTML(c.Nome)+'</div></div></td><td><div class="chips">'+(sectorsFor(c.ID).map(s=>'<span class="badge">'+escapeHTML(s.Setor)+'</span>').join('')||'<span class="muted">Nenhum setor</span>')+'</div></td><td><span class="badge '+(c.LogotipoArquivoID?'':'gray')+'">'+(c.LogotipoArquivoID?'Cadastrado':'Não cadastrado')+'</span></td>'+(admin?'<td><button class="btn text" data-edit="'+escapeHTML(c.ID)+'">Editar</button></td>':'')+'</tr>').join('');}
- else{const columns={Cronograma:[['VidaInForma','VidaInForma'],['Material','Material'],['AtividadesDiferenciadas','Atividades diferenciadas']],GinasticaLaboral:[['SetorID','Setor'],['Presente','Presente'],['Total','Total']],Queixas:[['SegmentoCorporal','Segmento corporal'],['Percentual','%']],QuickMassage:[['Participacao','Participação'],['Total','Total']]}[state.view];headers=['Data','Cliente',...columns.map(c=>c[1]),'Ações'];body=pageRows.map(r=>'<tr><td>'+escapeHTML(dateBR(r.Data))+'</td><td>'+escapeHTML(clientName(r.ClienteID))+'</td>'+columns.map(([field])=>'<td>'+(field==='Percentual'?formatPercent(r[field]):escapeHTML(field==='SetorID'?sectorName(r[field]):r[field]!==''?r[field]:'—'))+'</td>').join('')+'<td><button class="btn text" data-edit="'+escapeHTML(r.ID)+'">Editar</button></td></tr>').join('');}
+ if(state.view==='Clientes'){headers=['Cliente','Setores','Logotipo',...(admin?['Ações']:[])];body=pageRows.map(c=>'<tr><td><div class="client-cell">'+logoCell(c)+'<div class="client-name">'+escapeHTML(c.Nome)+'</div></div></td><td><div class="chips">'+(sectorsFor(c.ID).map(s=>'<span class="badge">'+escapeHTML(s.Setor)+'</span>').join('')||'<span class="muted">Nenhum setor</span>')+'</div></td><td><span class="badge '+(c.LogotipoArquivoID?'':'gray')+'">'+(c.LogotipoArquivoID?'Cadastrado':'Não cadastrado')+'</span></td>'+(admin?'<td><div class="row-actions"><button class="btn text" data-edit="'+escapeHTML(c.ID)+'">Editar</button><button class="btn secondary access-button" data-client-access="'+escapeHTML(c.ID)+'" aria-label="Gerenciar acessos de '+escapeHTML(c.Nome)+'">Acessos</button></div></td>':'')+'</tr>').join('');}
+ else{const columns={Cronograma:[['VidaInForma','VidaInForma'],['Material','Material'],['AtividadesDiferenciadas','Atividades diferenciadas']],GinasticaLaboral:[['SetorID','Setor'],['Presente','Presente'],['Total','Total']],Queixas:[['SegmentoCorporal','Segmento corporal'],['Percentual','%']],QuickMassage:[['Participacao','Participação'],['Total','Total']]}[state.view];headers=['Data','Cliente',...columns.map(c=>c[1]),...(admin?['Ações']:[])];body=pageRows.map(r=>'<tr><td>'+escapeHTML(dateBR(r.Data))+'</td><td>'+escapeHTML(clientName(r.ClienteID))+'</td>'+columns.map(([field])=>'<td>'+(field==='Percentual'?formatPercent(r[field]):escapeHTML(field==='SetorID'?sectorName(r[field]):r[field]!==''?r[field]:'—'))+'</td>').join('')+(admin?'<td><button class="btn text" data-edit="'+escapeHTML(r.ID)+'">Editar</button></td>':'')+'</tr>').join('');}
  if(!pageRows.length){const loaded=Boolean(state.data[state.view]);$('tableContainer').innerHTML='<div class="empty">'+icon(VIEWS[state.view].icon)+'<h3>'+(state.loading&&!loaded?'Carregando registros…':!loaded?'Dados indisponíveis':(state.data[state.view]||[]).length?'Nenhum resultado encontrado':'Vamos começar?')+'</h3><p>'+(!loaded?'Use o botão atualizar para consultar a base.':(state.data[state.view]||[]).length?'Ajuste os filtros para visualizar outros registros.':'Os registros aparecerão aqui após o primeiro cadastro.')+'</p></div>';}
  else $('tableContainer').innerHTML='<table><thead><tr>'+headers.map(h=>'<th scope="col">'+escapeHTML(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table>';
  $('recordCount').textContent=rows.length+' registro(s)'+(rows.length?' · exibindo '+((state.page-1)*state.pageSize+1)+' a '+Math.min(state.page*state.pageSize,rows.length):'');$('pageCount').textContent=state.page+' / '+pages;$('previousPage').disabled=state.page<=1;$('nextPage').disabled=state.page>=pages;renderLogos();}
@@ -149,7 +156,7 @@ function field(label,name,value='',type='text',extra=''){return '<label class="f
 function textarea(label,name,value='',extra=''){return '<label class="field">'+escapeHTML(label)+'<textarea name="'+name+'" maxlength="5000" '+extra+'>'+escapeHTML(value)+'</textarea></label>';}
 function selectField(label,name,options,value='',extra=''){return '<label class="field">'+escapeHTML(label)+'<select name="'+name+'" '+extra+'><option value="">Selecione</option>'+options.map(o=>'<option value="'+escapeHTML(o.value)+'" '+(o.value===value?'selected':'')+'>'+escapeHTML(o.label)+'</option>').join('')+'</select></label>';}
 function setSaving(busy){state.modalBusy=busy;const button=$('saveButton');if(button){button.disabled=busy;button.textContent=busy?'Salvando…':'Salvar';}$('closeModal').disabled=busy;document.querySelectorAll('[data-cancel]').forEach(b=>b.disabled=busy);}
-function openRecord(id){const view=state.view;if(view==='Clientes'){openClient(id);return;}if(!state.data.Clientes?.length){notify('Cadastre um cliente antes de registrar atividades.',true);return;}const r=(state.data[view]||[]).find(r=>r.ID===id)||{},chosen=r.ClienteID||$('clientFilter').value||'';
+function openRecord(id){if(state.user?.Perfil!=='Administrador')return;const view=state.view;if(view==='Clientes'){openClient(id);return;}if(!state.data.Clientes?.length){notify('Cadastre um cliente antes de registrar atividades.',true);return;}const r=(state.data[view]||[]).find(r=>r.ID===id)||{},chosen=r.ClienteID||$('clientFilter').value||'';
  let html='<form id="recordForm"><div class="form-grid"><div class="full">'+selectField('Cliente','ClienteID',state.data.Clientes.map(c=>({value:c.ID,label:c.Nome})),chosen,'required '+(r.ID?'disabled':''))+'</div>'+field('Data','Data',r.Data||today(),'date','required');
  if(view==='GinasticaLaboral')html+=selectField('Setor','SetorID',sectorsFor(chosen).map(s=>({value:s.ID,label:s.Setor})),r.SetorID||'','required')+field('Presente','Presente',r.Presente??'','number','required min="0" step="1"')+field('Total','Total',r.Total??'','number','required min="0" step="1"');
  if(view==='Cronograma')html+='<div class="full">'+textarea('VidaInForma','VidaInForma',r.VidaInForma)+textarea('Material','Material',r.Material)+textarea('Atividades diferenciadas','AtividadesDiferenciadas',r.AtividadesDiferenciadas)+'</div>';
@@ -176,14 +183,81 @@ function openClient(id){if(state.user.Perfil!=='Administrador')return;const c=(s
   }catch(error){modalError((written?'O cliente foi salvo, mas faltou concluir: ':'')+error.message);}finally{setSaving(false);}
  };
 }
-async function openTeam(){openModal('Gerenciar equipe','<p class="muted" style="margin-top:20px">Carregando colaboradores…</p>');try{const users=await api('listarUsuarios');if($('modalBackdrop').hidden)return;renderTeam(users);}catch(e){$('modalBody').innerHTML='<div class="error" role="alert">'+escapeHTML(e.message)+'</div>';}}
-function renderTeam(users){$('modalBody').innerHTML='<p class="muted" style="margin-top:20px">Administradores gerenciam clientes e acessos. Colaboradores preenchem os registros de atividades.</p><button class="btn" id="addUser">＋ Novo colaborador</button><div class="team-list">'+users.map(u=>'<div class="team-row"><div><strong>'+escapeHTML(u.Nome)+'</strong><small>'+escapeHTML(u.Email)+'<br>'+escapeHTML(u.Perfil)+' · '+(u.Ativo==='SIM'?'Ativo':'Inativo')+'</small></div><button class="btn secondary" data-user="'+escapeHTML(u.ID)+'">Editar</button></div>').join('')+'</div>';$('addUser').onclick=()=>openUser();document.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>openUser(users.find(u=>u.ID===b.dataset.user)));}
-function openUser(user={}){let savedID=user.ID||'';const self=user.ID===state.user.ID;
+async function openTeam(){if(state.user?.Perfil!=='Administrador')return;openModal('Gerenciar equipe','<p class="muted" style="margin-top:20px">Carregando colaboradores…</p>');try{const users=await api('listarUsuarios');if($('modalBackdrop').hidden)return;renderTeam(users);}catch(e){$('modalBody').innerHTML='<div class="error" role="alert">'+escapeHTML(e.message)+'</div>';}}
+function renderTeam(users){$('modalBody').innerHTML='<p class="muted" style="margin-top:20px">Administradores gerenciam clientes, informações e acessos. Colaboradores têm acesso somente à consulta.</p><button class="btn" id="addUser">＋ Novo colaborador</button><div class="team-list">'+users.map(u=>'<div class="team-row"><div><strong>'+escapeHTML(u.Nome)+'</strong><small>'+escapeHTML(u.Email)+'<br>'+escapeHTML(u.Perfil)+' · '+(u.Ativo==='SIM'?'Ativo':'Inativo')+'</small></div><button class="btn secondary" data-user="'+escapeHTML(u.ID)+'">Editar</button></div>').join('')+'</div>';$('addUser').onclick=()=>openUser();document.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>openUser(users.find(u=>u.ID===b.dataset.user)));}
+function openUser(user={}){if(state.user?.Perfil!=='Administrador')return;let savedID=user.ID||'';const self=user.ID===state.user.ID;
  openModal(user.ID?'Editar colaborador':'Novo colaborador','<form id="userForm">'+field('Nome','Nome',user.Nome||'','text','required maxlength="200"')+field('E-mail','Email',user.Email||'','email','required maxlength="254" autocomplete="off"')+'<div class="form-grid">'+selectField('Perfil','Perfil',[{value:'Colaborador',label:'Colaborador'},{value:'Administrador',label:'Administrador'}],user.Perfil||'Colaborador','required '+(self?'disabled':''))+selectField('Situação','Ativo',[{value:'SIM',label:'Ativo'},{value:'NAO',label:'Inativo'}],user.Ativo||'SIM','required '+(self?'disabled':''))+'</div><div class="team-section"><p class="muted small">'+(user.ID?'Deixe a senha em branco para manter a atual. Uma nova senha encerra as sessões desse usuário.':'Defina uma senha inicial e informe-a ao colaborador por um canal privado.')+'</p>'+field(user.ID?'Nova senha':'Senha inicial','Senha','','password','minlength="12" maxlength="128" autocomplete="new-password" '+(!user.ID?'required':''))+field('Confirmar senha','Confirmacao','','password','autocomplete="new-password"')+'</div>'+formFooter()+'</form>');
  const form=$('userForm');form.onsubmit=async e=>{e.preventDefault();setSaving(true);$('modalError').hidden=true;try{const dados=Object.fromEntries(new FormData(form));delete dados.Senha;delete dados.Confirmacao;if(savedID)dados.ID=savedID;if(self){dados.Perfil='Administrador';dados.Ativo='SIM';}const password=form.elements.Senha.value;if(password){if(password.length<12||password.length>128)throw new Error('Use uma senha de 12 a 128 caracteres.');if(password!==form.elements.Confirmacao.value)throw new Error('As senhas não são iguais.');dados.salt=toHex(crypto.getRandomValues(new Uint8Array(32)));dados.prova=await passwordProof(password,dados.salt);}else if(form.elements.Confirmacao.value)throw new Error('Preencha a nova senha ou deixe os dois campos vazios.');const result=await api('salvarUsuario',{dados});savedID=result.ID;if(result.reautenticar){sessionOff('Cadastro atualizado. Entre novamente com seus dados.');notify('Cadastro atualizado.');return;}if(self){state.user.Nome=dados.Nome;$('userName').textContent=dados.Nome;$('userAvatar').textContent=initials(dados.Nome);}closeModal(true);notify('Colaborador salvo com sucesso.');}catch(e){modalError(e.message);}finally{setSaving(false);}};
 }
+// Cada tela de acessos fica vinculada à empresa selecionada.
+let clientAccessRequest = 0;
+async function openClientAccesses(clienteId) {
+  if (state.user?.Perfil !== 'Administrador') return;
+  const empresa = (state.data.Clientes || []).find(c => c.ID === clienteId);
+  if (!empresa) { notify('Cliente não localizado. Atualize a lista.', true); return; }
+  const request = ++clientAccessRequest;
+  const title = 'Acessos — ' + empresa.Nome;
+  openModal(title, '<p class="muted" style="margin-top:20px">Carregando os acessos desta empresa…</p>');
+  try {
+    const users = await api('listarAcessosCliente', { clienteId });
+    if ($('modalBackdrop').hidden || request !== clientAccessRequest || $('modalTitle').textContent !== title) return;
+    renderClientAccesses(empresa, users);
+  } catch (error) {
+    if (!$('modalBackdrop').hidden && request === clientAccessRequest && $('modalTitle').textContent === title) {
+      $('modalBody').innerHTML = '<div class="error" role="alert">' + escapeHTML(error.message) + '</div><div class="modal-actions"><button class="btn secondary" id="retryClientAccess">Tentar novamente</button><button class="btn secondary" data-cancel>Fechar</button></div>';
+      $('retryClientAccess').onclick = () => openClientAccesses(clienteId);
+    }
+  }
+}
+function renderClientAccesses(empresa, users) {
+  const ordered = [...users].sort((a,b) => a.Nome.localeCompare(b.Nome,'pt-BR'));
+  $('modalBody').innerHTML = '<div class="access-intro"><strong>' + escapeHTML(empresa.Nome) + '</strong><p>Os usuários abaixo poderão consultar somente as informações desta empresa. O portal do cliente não permite edições.</p></div><div class="access-toolbar"><span class="muted">' + users.length + ' acesso(s) cadastrado(s)</span><button class="btn" id="newClientAccess">＋ Novo acesso</button></div>' + (users.length ? '<div class="team-list">' + ordered.map(user => '<div class="team-row"><div><strong>' + escapeHTML(user.Nome) + '</strong><small>' + escapeHTML(user.Email) + '</small><br><span class="access-state' + (user.Ativo === 'SIM' ? '' : ' inactive') + '">' + (user.Ativo === 'SIM' ? 'Ativo' : 'Inativo') + '</span></div><button class="btn secondary" data-edit-client-user="' + escapeHTML(user.ID) + '">Editar acesso</button></div>').join('') + '</div>' : '<div class="access-empty">Nenhum acesso cadastrado para esta empresa.<br>Clique em Novo acesso para cadastrar o primeiro usuário.</div>') + '<div class="modal-actions"><button class="btn secondary" data-cancel>Fechar</button></div>';
+  $('newClientAccess').onclick = () => openClientAccessUser(empresa);
+  $('modalBody').querySelectorAll('[data-edit-client-user]').forEach(button => {
+    button.onclick = () => {
+      const user = users.find(u => u.ID === button.dataset.editClientUser);
+      if (user) openClientAccessUser(empresa, user);
+    };
+  });
+}
+function openClientAccessUser(empresa, user = {}) {
+  if (state.user?.Perfil !== 'Administrador') return;
+  let savedID = user.ID || '';
+  openModal(user.ID ? 'Editar acesso do cliente' : 'Novo acesso do cliente',
+    '<form id="clientAccessForm"><div class="access-intro"><strong>' + escapeHTML(empresa.Nome) + '</strong><p>Acesso somente para consulta dos dados desta empresa.</p></div>' +
+    field('Nome do usuário', 'Nome', user.Nome || '', 'text', 'required maxlength="200" autocomplete="name"') +
+    field('E-mail de acesso', 'Email', user.Email || '', 'email', 'required maxlength="254" autocomplete="off"') +
+    selectField('Situação do acesso', 'Ativo', [{value:'SIM',label:'Ativo'},{value:'NAO',label:'Inativo'}], user.Ativo || 'SIM', 'required') +
+    '<div class="team-section"><p class="muted small">' + (user.ID ? 'Deixe os campos de senha vazios para manter a senha atual. Ao definir uma nova senha ou desativar o acesso, as sessões anteriores serão encerradas.' : 'Defina uma senha inicial com pelo menos 12 caracteres e informe-a ao usuário por um canal privado.') + '</p>' +
+    field(user.ID ? 'Nova senha' : 'Senha inicial', 'Senha', '', 'password', 'minlength="12" maxlength="128" autocomplete="new-password" ' + (user.ID ? '' : 'required')) +
+    field('Confirmar senha', 'Confirmacao', '', 'password', 'minlength="12" maxlength="128" autocomplete="new-password" ' + (user.ID ? '' : 'required')) + '</div>' + formFooter() + '</form>');
+  const form = $('clientAccessForm');
+  form.onsubmit = async event => {
+    event.preventDefault(); setSaving(true); $('modalError').hidden = true;
+    try {
+      const dados = {Nome:form.elements.Nome.value.trim(), Email:form.elements.Email.value.trim().toLowerCase(), Ativo:form.elements.Ativo.value};
+      if (savedID) dados.ID = savedID;
+      const password = form.elements.Senha.value;
+      const confirmation = form.elements.Confirmacao.value;
+      if (!savedID && !password) throw new Error('Defina a senha inicial do usuário.');
+      if (password) {
+        if (password.length < 12 || password.length > 128) throw new Error('Use uma senha de 12 a 128 caracteres.');
+        if (password !== confirmation) throw new Error('As senhas não são iguais.');
+        dados.salt = toHex(crypto.getRandomValues(new Uint8Array(32)));
+        dados.prova = await passwordProof(password, dados.salt);
+      } else if (confirmation) { throw new Error('Preencha a nova senha ou deixe os dois campos vazios.'); }
+      const result = await api('salvarAcessoCliente', {clienteId:empresa.ID, dados});
+      savedID = result.ID;
+      form.elements.Senha.value = ''; form.elements.Confirmacao.value = '';
+      notify('Acesso do cliente salvo com sucesso.');
+      await openClientAccesses(empresa.ID);
+    } catch (error) { modalError(error.message); }
+    finally { setSaving(false); }
+  };
+}
+
 $('navigation').onclick=e=>{const button=e.target.closest('[data-view]');if(button)setView(button.dataset.view);};
-$('tableContainer').onclick=e=>{const button=e.target.closest('[data-edit]');if(button)openRecord(button.dataset.edit);};
+$('tableContainer').onclick=e=>{if(state.user?.Perfil!=='Administrador')return;const access=e.target.closest('[data-client-access]');if(access){openClientAccesses(access.dataset.clientAccess);return;}const button=e.target.closest('[data-edit]');if(button)openRecord(button.dataset.edit);};
 $('newButton').onclick=()=>openRecord();$('refreshButton').onclick=loadAll;$('teamButton').onclick=openTeam;
 $('closeModal').onclick=()=>closeModal();$('modalBody').addEventListener('click',e=>{if(e.target.closest('[data-cancel]'))closeModal();});
 $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
