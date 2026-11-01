@@ -36,6 +36,13 @@
 .access-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 13px}.access-toolbar .muted{font-size:12px}
 .access-empty{text-align:center;padding:30px 15px;color:#606572;font-size:13px;line-height:1.6}
 .access-state{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;margin-top:5px;background:#ddfaf5;color:#075e56}.access-state.inactive{background:#f0f1f5;color:#606572}
+/* Edição e exclusão dos registros */
+.btn.danger-outline{background:#fff;border-color:#edc9c9;color:#a43737;font-size:11px;min-height:34px;padding:7px 10px}.btn.danger-outline:hover{background:#fff0ee;border-color:#d9aaaa}
+.btn.danger{background:#a43737;color:#fff}.btn.danger:hover{background:#882929}
+.delete-intro{margin-top:21px;line-height:1.65;color:#606572;font-size:13px}.delete-summary{margin:17px 0;padding:4px 16px;border:1px solid #e3e6ee;border-radius:9px;background:#fafbff}
+.delete-summary div{display:grid;grid-template-columns:115px 1fr;gap:14px;padding:10px 0;border-bottom:1px solid #edf0f7}.delete-summary div:last-child{border:0}.delete-summary dt{font-size:11px;color:#606572}.delete-summary dd{margin:0;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow-y:auto}
+.delete-footnote{font-size:11px;color:#606572;line-height:1.6}
+@media(max-width:760px){.delete-summary div{grid-template-columns:90px 1fr;gap:10px}}
 </style>
 </head>
 <body>
@@ -143,7 +150,7 @@ function logoCell(c){return '<div class="client-logo" data-logo-client="'+escape
 function render(){if(!state.user)return;const rows=filteredRows();renderStats(rows);const pages=Math.max(1,Math.ceil(rows.length/state.pageSize));state.page=Math.min(state.page,pages);const pageRows=rows.slice((state.page-1)*state.pageSize,state.page*state.pageSize);const admin=state.user.Perfil==='Administrador';
  let headers=[],body='';
  if(state.view==='Clientes'){headers=['Cliente','Setores','Logotipo',...(admin?['Ações']:[])];body=pageRows.map(c=>'<tr><td><div class="client-cell">'+logoCell(c)+'<div class="client-name">'+escapeHTML(c.Nome)+'</div></div></td><td><div class="chips">'+(sectorsFor(c.ID).map(s=>'<span class="badge">'+escapeHTML(s.Setor)+'</span>').join('')||'<span class="muted">Nenhum setor</span>')+'</div></td><td><span class="badge '+(c.LogotipoArquivoID?'':'gray')+'">'+(c.LogotipoArquivoID?'Cadastrado':'Não cadastrado')+'</span></td>'+(admin?'<td><div class="row-actions"><button class="btn text" data-edit="'+escapeHTML(c.ID)+'">Editar</button><button class="btn secondary access-button" data-client-access="'+escapeHTML(c.ID)+'" aria-label="Gerenciar acessos de '+escapeHTML(c.Nome)+'">Acessos</button></div></td>':'')+'</tr>').join('');}
- else{const columns={Cronograma:[['VidaInForma','VidaInForma'],['Material','Material'],['AtividadesDiferenciadas','Atividades diferenciadas']],GinasticaLaboral:[['SetorID','Setor'],['Presente','Presente'],['Total','Total']],Queixas:[['SegmentoCorporal','Segmento corporal'],['Percentual','%']],QuickMassage:[['Participacao','Participação'],['Total','Total']]}[state.view];headers=['Data','Cliente',...columns.map(c=>c[1]),...(admin?['Ações']:[])];body=pageRows.map(r=>'<tr><td>'+escapeHTML(dateBR(r.Data))+'</td><td>'+escapeHTML(clientName(r.ClienteID))+'</td>'+columns.map(([field])=>'<td>'+(field==='Percentual'?formatPercent(r[field]):escapeHTML(field==='SetorID'?sectorName(r[field]):r[field]!==''?r[field]:'—'))+'</td>').join('')+(admin?'<td><button class="btn text" data-edit="'+escapeHTML(r.ID)+'">Editar</button></td>':'')+'</tr>').join('');}
+ else{const columns={Cronograma:[['VidaInForma','VidaInForma'],['Material','Material'],['AtividadesDiferenciadas','Atividades diferenciadas']],GinasticaLaboral:[['SetorID','Setor'],['Presente','Presente'],['Total','Total']],Queixas:[['SegmentoCorporal','Segmento corporal'],['Percentual','%']],QuickMassage:[['Participacao','Participação'],['Total','Total']]}[state.view];headers=['Data','Cliente',...columns.map(c=>c[1]),...(admin?['Ações']:[])];body=pageRows.map(r=>'<tr><td>'+escapeHTML(dateBR(r.Data))+'</td><td>'+escapeHTML(clientName(r.ClienteID))+'</td>'+columns.map(([field])=>'<td>'+(field==='Percentual'?formatPercent(r[field]):escapeHTML(field==='SetorID'?sectorName(r[field]):r[field]!==''?r[field]:'—'))+'</td>').join('')+(admin?'<td><div class="row-actions"><button class="btn text" data-edit="'+escapeHTML(r.ID)+'">Editar</button><button class="btn danger-outline" data-delete-record="'+escapeHTML(r.ID)+'" aria-label="Excluir registro de '+escapeHTML(dateBR(r.Data))+'">Excluir</button></div></td>':'')+'</tr>').join('');}
  if(!pageRows.length){const loaded=Boolean(state.data[state.view]);$('tableContainer').innerHTML='<div class="empty">'+icon(VIEWS[state.view].icon)+'<h3>'+(state.loading&&!loaded?'Carregando registros…':!loaded?'Dados indisponíveis':(state.data[state.view]||[]).length?'Nenhum resultado encontrado':'Vamos começar?')+'</h3><p>'+(!loaded?'Use o botão atualizar para consultar a base.':(state.data[state.view]||[]).length?'Ajuste os filtros para visualizar outros registros.':'Os registros aparecerão aqui após o primeiro cadastro.')+'</p></div>';}
  else $('tableContainer').innerHTML='<table><thead><tr>'+headers.map(h=>'<th scope="col">'+escapeHTML(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table>';
  $('recordCount').textContent=rows.length+' registro(s)'+(rows.length?' · exibindo '+((state.page-1)*state.pageSize+1)+' a '+Math.min(state.page*state.pageSize,rows.length):'');$('pageCount').textContent=state.page+' / '+pages;$('previousPage').disabled=state.page<=1;$('nextPage').disabled=state.page>=pages;renderLogos();}
@@ -164,7 +171,7 @@ function openRecord(id){if(state.user?.Perfil!=='Administrador')return;const vie
  if(view==='QuickMassage')html+=field('Participação','Participacao',r.Participacao??'','number','required min="0" step="1"')+field('Total','Total',r.Total??'','number','required min="0" step="1"');
  html+='</div>'+formFooter()+'</form>';openModal(r.ID?'Editar registro':VIEWS[view].newLabel,html);
  const form=$('recordForm');if(view==='GinasticaLaboral')form.elements.ClienteID.onchange=()=>{form.elements.SetorID.innerHTML='<option value="">Selecione</option>'+sectorsFor(form.elements.ClienteID.value).map(s=>'<option value="'+escapeHTML(s.ID)+'">'+escapeHTML(s.Setor)+'</option>').join('');};
- form.onsubmit=async e=>{e.preventDefault();setSaving(true);$('modalError').hidden=true;try{const dados=Object.fromEntries(new FormData(form));if(r.ID){dados.ID=r.ID;dados.ClienteID=r.ClienteID;}if(view==='Queixas'){const p=Number(dados.Percentual);if(dados.Percentual===''||!Number.isFinite(p)||p<0||p>100)throw new Error('Informe um percentual entre 0 e 100.');}const result=await api('salvar',{tabela:view,dados});r.ID=result.ID;closeModal(true);notify('Registro salvo com sucesso.');await loadAll();}catch(err){modalError(err.message);}finally{setSaving(false);}};
+ form.onsubmit=async e=>{e.preventDefault();if(state.modalBusy)return;setSaving(true);$('modalError').hidden=true;try{const dados=Object.fromEntries(new FormData(form));if(r.ID){dados.ID=r.ID;dados.ClienteID=r.ClienteID;}if(view==='Queixas'){const p=Number(dados.Percentual);if(dados.Percentual===''||!Number.isFinite(p)||p<0||p>100)throw new Error('Informe um percentual entre 0 e 100.');}const result=await api('salvar',{tabela:view,dados});r.ID=result.ID;closeModal(true);notify('Registro salvo com sucesso.');await loadAll();}catch(err){modalError(err.message);}finally{setSaving(false);}};
 }
 function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Não foi possível ler a imagem.'));reader.readAsDataURL(file);});}
 function validateLogo(file){if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Selecione uma imagem PNG, JPG ou WebP.');if(file.size>512000)throw new Error('O logotipo deve ter até 500 KB.');}
@@ -256,8 +263,38 @@ function openClientAccessUser(empresa, user = {}) {
   };
 }
 
+function confirmRecordDeletion(id) {
+  if (state.user?.Perfil !== 'Administrador') return;
+  const tabela = state.view;
+  if (!['Cronograma','GinasticaLaboral','Queixas','QuickMassage'].includes(tabela)) return;
+  const registro = (state.data[tabela] || []).find(item => item.ID === id);
+  if (!registro) { notify('Registro não encontrado. Atualize a lista.', true); return; }
+  const linhas = [['Tela',VIEWS[tabela].title],['Cliente',clientName(registro.ClienteID)],['Data',dateBR(registro.Data)]];
+  if (tabela === 'Cronograma') linhas.push(['VidaInForma',registro.VidaInForma || '—'],['Material',registro.Material || '—'],['Atividades diferenciadas',registro.AtividadesDiferenciadas || '—']);
+  if (tabela === 'GinasticaLaboral') linhas.push(['Setor',sectorName(registro.SetorID)],['Presente',registro.Presente],['Total',registro.Total]);
+  if (tabela === 'Queixas') linhas.push(['Segmento corporal',registro.SegmentoCorporal],['Percentual',registro.Percentual === '' || registro.Percentual == null ? '—' : Number(registro.Percentual).toLocaleString('pt-BR',{maximumFractionDigits:2}) + '%']);
+  if (tabela === 'QuickMassage') linhas.push(['Participação',registro.Participacao],['Total',registro.Total]);
+  openModal('Excluir registro', '<form id="deleteRecordForm"><p class="delete-intro">Confirma a exclusão deste registro? Ele deixará de aparecer nas consultas da equipe e do cliente.</p><dl class="delete-summary">' + linhas.map(([label,value]) => '<div><dt>' + escapeHTML(label) + '</dt><dd>' + escapeHTML(value) + '</dd></div>').join('') + '</dl><p class="delete-footnote">Uma cópia será preservada no histórico interno da planilha.</p><div id="modalError" class="error" role="alert" hidden></div><div class="modal-actions"><button class="btn secondary" type="button" data-cancel>Cancelar</button><button class="btn danger" type="submit" id="saveButton">Excluir registro</button></div></form>');
+  // A ação destrutiva não recebe foco automaticamente.
+  $('modalBody').querySelector('[data-cancel]')?.focus();
+  const form = $('deleteRecordForm');
+  form.onsubmit = async event => {
+    event.preventDefault();
+    if (state.modalBusy) return;
+    setSaving(true); $('saveButton').textContent = 'Excluindo…'; $('modalError').hidden = true;
+    try {
+      const result = await api('excluirRegistro', {tabela,ID:registro.ID,clienteId:registro.ClienteID,atualizadoEm:registro.AtualizadoEm || '',conferencia:registro});
+      state.data[tabela]=(state.data[tabela]||[]).filter(item=>item.ID!==registro.ID);
+      render();closeModal(true);
+      notify(result.jaExcluido ? 'Este registro já havia sido excluído.' : 'Registro excluído com sucesso.');
+      await loadAll();
+    } catch (error) { modalError(error.message); }
+    finally { setSaving(false); const button=$('saveButton'); if(button && form.isConnected)button.textContent='Excluir registro'; }
+  };
+}
+
 $('navigation').onclick=e=>{const button=e.target.closest('[data-view]');if(button)setView(button.dataset.view);};
-$('tableContainer').onclick=e=>{if(state.user?.Perfil!=='Administrador')return;const access=e.target.closest('[data-client-access]');if(access){openClientAccesses(access.dataset.clientAccess);return;}const button=e.target.closest('[data-edit]');if(button)openRecord(button.dataset.edit);};
+$('tableContainer').onclick=e=>{if(state.user?.Perfil!=='Administrador')return;const access=e.target.closest('[data-client-access]');if(access){openClientAccesses(access.dataset.clientAccess);return;}const remove=e.target.closest('[data-delete-record]');if(remove){confirmRecordDeletion(remove.dataset.deleteRecord);return;}const button=e.target.closest('[data-edit]');if(button)openRecord(button.dataset.edit);};
 $('newButton').onclick=()=>openRecord();$('refreshButton').onclick=loadAll;$('teamButton').onclick=openTeam;
 $('closeModal').onclick=()=>closeModal();$('modalBody').addEventListener('click',e=>{if(e.target.closest('[data-cancel]'))closeModal();});
 $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
